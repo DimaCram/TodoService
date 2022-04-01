@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using AutoMapper;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
@@ -13,6 +14,12 @@ using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.OpenApi.Models;
 using TodoApi.Models;
+using TodoApiDTO.BLL.Interfaces;
+using TodoApiDTO.BLL.Services;
+using TodoApiDTO.DAL.Context;
+using TodoApiDTO.DAL.Interfaces;
+using TodoApiDTO.DAL.Repositories;
+using TodoApiDTO.Mapper;
 using TodoApiDTO.Middleware;
 
 namespace TodoApi
@@ -30,7 +37,8 @@ namespace TodoApi
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddDbContext<TodoContext>(opt =>
-               opt.UseInMemoryDatabase("TodoList"));
+               opt.UseSqlServer(Configuration["ConnectionString"]));
+
             services.AddControllers();
 
             services.AddSwaggerGen(c =>
@@ -47,7 +55,19 @@ namespace TodoApi
                         Url = new Uri("https://coderjony.com/"),
                     },
                 });
+                c.EnableAnnotations();
             });
+
+            var mapperConfig = new MapperConfiguration(mc =>
+            {
+                mc.AddProfile(new MappingProfile());
+            });
+
+            IMapper mapper = mapperConfig.CreateMapper();
+            services.AddSingleton(mapper);
+
+            services.AddScoped<ITodoService, TodoService>();
+            services.AddScoped<ITodoRepository, TodoRepository>();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
